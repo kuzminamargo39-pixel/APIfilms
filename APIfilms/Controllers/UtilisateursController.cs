@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using APIfilms.Models.EntityFramework;
+using APIfilms.Models.Repository;
 
 namespace APIfilms.Controllers
 {
@@ -13,57 +8,52 @@ namespace APIfilms.Controllers
     [ApiController]
     public class UtilisateursController : ControllerBase
     {
-        private readonly FilmRatingsDBContext _context;
+        private readonly IDataRepository<Utilisateur> dataRepository;
 
-        public UtilisateursController(FilmRatingsDBContext context)
+        public UtilisateursController(IDataRepository<Utilisateur> dataRepo)
         {
-            _context = context;
+            dataRepository = dataRepo;
         }
 
-        // GET: api/Utilisateurs/GetUtilisateurs
         [HttpGet("GetUtilisateurs")]
         [ActionName("GetUtilisateurs")]
         public async Task<ActionResult<IEnumerable<Utilisateur>>> GetUtilisateurs()
         {
-            return await _context.Utilisateurs.ToListAsync();
+            return await dataRepository.GetAllAsync();
         }
 
-        // GET: api/Utilisateurs/GetUtilisateurById/5
         [HttpGet("GetUtilisateurById/{id}")]
         [ActionName("GetUtilisateurById")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Utilisateur>> GetUtilisateurById(int id)
         {
-            var utilisateur = await _context.Utilisateurs.FindAsync(id);
-
-            if (utilisateur == null)
+            var user = await dataRepository.GetByIdAsync(id);
+            if (user.Value == null)
             {
                 return NotFound();
             }
-
-            return utilisateur;
+            return user;
         }
 
-        // GET: api/Utilisateurs/GetUtilisateurByEmail/email@domaine.com
         [HttpGet("GetUtilisateurByEmail/{email}")]
         [ActionName("GetUtilisateurByEmail")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Utilisateur>> GetUtilisateurByEmail(string email)
         {
-            var utilisateur = await _context.Utilisateurs
-                                            .FirstOrDefaultAsync(u => u.Mail.ToLower() == email.ToLower());
-
-            if (utilisateur == null)
+            var user = await dataRepository.GetByStringAsync(email);
+            if (user.Value == null)
             {
                 return NotFound();
             }
-
-            return utilisateur;
+            return user;
         }
 
-        // PUT: api/Utilisateurs/PutUtilisateur/5
         [HttpPut("PutUtilisateur/{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PutUtilisateur(int id, Utilisateur utilisateur)
         {
             if (id != utilisateur.UserId)
@@ -76,28 +66,16 @@ namespace APIfilms.Controllers
                 return BadRequest(ModelState);
             }
 
-            _context.Entry(utilisateur).State = EntityState.Modified;
-
-            try
+            var userToUpdate = await dataRepository.GetByIdAsync(id);
+            if (userToUpdate.Value == null)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UtilisateurExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return NotFound();
             }
 
+            await dataRepository.UpdateAsync(userToUpdate.Value, utilisateur);
             return NoContent();
         }
 
-        // POST: api/Utilisateurs/PostUtilisateur
         [HttpPost("PostUtilisateur")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -108,31 +86,23 @@ namespace APIfilms.Controllers
                 return BadRequest(ModelState);
             }
 
-            _context.Utilisateurs.Add(utilisateur);
-            await _context.SaveChangesAsync();
-
+            await dataRepository.AddAsync(utilisateur);
             return CreatedAtAction("GetUtilisateurById", new { id = utilisateur.UserId }, utilisateur);
         }
 
-        // DELETE: api/Utilisateurs/DeleteUtilisateur/5
         [HttpDelete("DeleteUtilisateur/{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUtilisateur(int id)
         {
-            var utilisateur = await _context.Utilisateurs.FindAsync(id);
-            if (utilisateur == null)
+            var user = await dataRepository.GetByIdAsync(id);
+            if (user.Value == null)
             {
                 return NotFound();
             }
 
-            _context.Utilisateurs.Remove(utilisateur);
-            await _context.SaveChangesAsync();
-
+            await dataRepository.DeleteAsync(user.Value);
             return NoContent();
-        }
-
-        private bool UtilisateurExists(int id)
-        {
-            return _context.Utilisateurs.Any(e => e.UserId == id);
         }
     }
 }

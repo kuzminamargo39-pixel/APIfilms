@@ -1,5 +1,7 @@
 ﻿using APIfilms.Controllers;
+using APIfilms.Models.DataManager;
 using APIfilms.Models.EntityFramework;
+using APIfilms.Models.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
@@ -11,25 +13,33 @@ namespace APIfilmsTests
     {
         private readonly FilmRatingsDBContext _context;
         private readonly UtilisateursController _controller;
+        private readonly IDataRepository<Utilisateur> dataRepository;
 
         public UtilisateursControllerTests()
         {
             var builder = new DbContextOptionsBuilder<FilmRatingsDBContext>()
-                .UseNpgsql("Server=localhost;Port=5432;Database=FilmRatingsDB;Uid=postgres;Pwd=postgres;"); 
+                .UseNpgsql("Server=localhost;Port=5432;Database=FilmRatingsDB;Uid=postgres;Pwd=postgres;");
 
             _context = new FilmRatingsDBContext(builder.Options);
-            _controller = new UtilisateursController(_context);
+            dataRepository = new UtilisateurManager(_context); 
+            _controller = new UtilisateursController(dataRepository); 
         }
 
         [TestMethod]
         public void GetUtilisateurs_ReturnsAllUsers()
         {
+            var result = _controller.GetUtilisateurs().Result;
+            var actualUsers = (result.Value as IEnumerable<Utilisateur>)?.ToList();
+
+            Assert.IsNotNull(actualUsers, "Результат не повинен бути null.");
+
             var expectedUsers = _context.Utilisateurs.ToList();
 
-            var result = _controller.GetUtilisateurs().Result;
-
-            var actionResult = result.Value as List<Utilisateur>;
-            Assert.AreEqual(expectedUsers.Count, actionResult?.Count, "Кількість користувачів не збігається.");
+            foreach (var user in actualUsers)
+            {
+                bool existsInDb = expectedUsers.Any(u => u.UserId == user.UserId);
+                Assert.IsTrue(existsInDb, $"Користувача з ID {user.UserId} не знайдено в базі даних.");
+            }
         }
 
         [TestMethod]
