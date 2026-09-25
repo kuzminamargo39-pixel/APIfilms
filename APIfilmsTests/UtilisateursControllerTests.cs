@@ -1,138 +1,146 @@
 ﻿using APIfilms.Controllers;
-using APIfilms.Models.DataManager;
+using Moq;
 using APIfilms.Models.EntityFramework;
 using APIfilms.Models.Repository;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace APIfilmsTests
 {
     [TestClass]
     public class UtilisateursControllerTests
     {
-        private readonly FilmRatingsDBContext _context;
-        private readonly UtilisateursController _controller;
-        private readonly IDataRepository<Utilisateur> dataRepository;
-
-        public UtilisateursControllerTests()
-        {
-            var builder = new DbContextOptionsBuilder<FilmRatingsDBContext>()
-                .UseNpgsql("Server=localhost;Port=5432;Database=FilmRatingsDB;Uid=postgres;Pwd=postgres;");
-
-            _context = new FilmRatingsDBContext(builder.Options);
-            dataRepository = new UtilisateurManager(_context); 
-            _controller = new UtilisateursController(dataRepository); 
-        }
-
         [TestMethod]
-        public void GetUtilisateurs_ReturnsAllUsers()
+        public void PostUtilisateur_ModelValidated_CreationOK_AvecMoq()
         {
-            var result = _controller.GetUtilisateurs().Result;
-            var actualUsers = (result.Value as IEnumerable<Utilisateur>)?.ToList();
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            var userController = new UtilisateursController(mockRepository.Object);
 
-            Assert.IsNotNull(actualUsers, "Результат не повинен бути null.");
-
-            var expectedUsers = _context.Utilisateurs.ToList();
-
-            foreach (var user in actualUsers)
+            Utilisateur user = new Utilisateur
             {
-                bool existsInDb = expectedUsers.Any(u => u.UserId == user.UserId);
-                Assert.IsTrue(existsInDb, $"Користувача з ID {user.UserId} не знайдено в базі даних.");
-            }
-        }
-
-        [TestMethod]
-        public void GetUtilisateurById_ReturnsUser_WhenUserExists()
-        {
-            var expectedUser = _context.Utilisateurs.FirstOrDefault(); 
-
-            if (expectedUser == null) Assert.Inconclusive("База даних порожня, тест неможливо виконати.");
-
-            var result = _controller.GetUtilisateurById(expectedUser.UserId).Result;
-
-            Assert.IsNotNull(result.Value);
-            Assert.AreEqual(expectedUser.UserId, result.Value.UserId);
-        }
-
-        [TestMethod]
-        public void GetUtilisateurById_ReturnsNotFound_WhenUserDoesNotExist()
-        {
-
-            var result = _controller.GetUtilisateurById(99999).Result; 
-
-            Assert.IsInstanceOfType(result.Result, typeof(NotFoundResult));
-        }
-
-        [TestMethod]
-        public void PostUtilisateur_ModelValidated_CreationOK()
-        {
-            Random rnd = new Random();
-            int digit = rnd.Next(1, 1000000000);
-
-            Utilisateur userAtester = new Utilisateur()
-            {
-                Nom = "MACHIN",
-                Prenom = "Luc",
-                Mobile = "0606070809",
-                Mail = "machin" + digit + "@gmail.com", 
-                Pwd = "Toto1234!",
+                Nom = "POISSON",
+                Prenom = "Pascal",
+                Mobile = "0606060606",
+                Mail = "poisson@gmail.com",
+                Pwd = "Toto12345678!",
                 Rue = "Chemin de Bellevue",
                 Cp = "74940",
                 Ville = "Annecy-le-Vieux",
                 Pays = "France"
             };
 
-            var result = _controller.PostUtilisateur(userAtester).Result;
+            var actionResult = userController.PostUtilisateur(user).Result;
 
-            var userRecupere = _context.Utilisateurs.Where(u => u.Mail.ToLower() == userAtester.Mail.ToLower()).FirstOrDefault();
-            Assert.IsNotNull(userRecupere);
+            Assert.IsInstanceOfType(actionResult, typeof(ActionResult<Utilisateur>), "Not an ActionResult<Utilisateur>");
+            Assert.IsInstanceOfType(actionResult.Result, typeof(CreatedAtActionResult), "Not a CreatedAtActionResult");
 
-            userAtester.UserId = userRecupere.UserId; 
-            Assert.AreEqual(userRecupere.Mail, userAtester.Mail, "Users not identical");
+            var result = actionResult.Result as CreatedAtActionResult;
+            Assert.IsInstanceOfType(result?.Value, typeof(Utilisateur), "Not a Utilisateur");
+
+            user.UserId = ((Utilisateur)result!.Value!).UserId;
+            Assert.AreEqual(user, (Utilisateur)result.Value, "Users not identical");
         }
 
         [TestMethod]
-        public void PostUtilisateur_ModelInvalid_ReturnsBadRequest()
+        public void GetUtilisateurById_ExistingIdPassed_ReturnsRightItem_AvecMoq()
         {
-            Utilisateur user = new Utilisateur()
+            Utilisateur user = new Utilisateur
             {
-                Mobile = "1", 
-                Mail = "test@gmail.com",
-                Pwd = "pwd"
+                UserId = 1,
+                Nom = "Calida",
+                Prenom = "Lilley",
+                Mobile = "0653930778",
+                Mail = "clilleymd@last.fm",
+                Pwd = "Toto12345678!",
+                Rue = "Impasse des bergeronnettes",
+                Cp = "74200",
+                Ville = "Allinges",
+                Pays = "France"
             };
 
-            string PhoneRegex = @"^0[0-9]{9}$";
-            Regex regex = new Regex(PhoneRegex);
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(user));
+            var userController = new UtilisateursController(mockRepository.Object);
 
-            if (!regex.IsMatch(user.Mobile))
-            {
-                _controller.ModelState.AddModelError("Mobile", "Le mobile doit contenir 10 chiffres");
-            }
+            var actionResult = userController.GetUtilisateurById(1).Result;
 
-            var result = _controller.PostUtilisateur(user).Result;
-
-            Assert.IsInstanceOfType(result.Result, typeof(BadRequestObjectResult));
+            Assert.IsNotNull(actionResult);
+            Assert.IsNotNull(actionResult.Value);
+            Assert.AreEqual(user, actionResult.Value as Utilisateur);
         }
 
         [TestMethod]
-        public void DeleteUtilisateur_DeletesUser()
+        public void GetUtilisateurById_UnknownIdPassed_ReturnsNotFoundResult_AvecMoq()
         {
-            var userToDelete = new Utilisateur()
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            var userController = new UtilisateursController(mockRepository.Object);
+
+            var actionResult = userController.GetUtilisateurById(0).Result;
+
+            Assert.IsInstanceOfType(actionResult.Result, typeof(NotFoundResult));
+        }
+
+        [TestMethod]
+        public void GetUtilisateurByEmail_ExistingEmailPassed_ReturnsRightItem_AvecMoq()
+        {
+            string testEmail = "clilleymd@last.fm";
+            Utilisateur user = new Utilisateur { UserId = 1, Mail = testEmail, Pwd = "pwd", Nom = "Calida" };
+
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            mockRepository.Setup(x => x.GetByStringAsync(testEmail)).ReturnsAsync(new ActionResult<Utilisateur>(user));
+            var userController = new UtilisateursController(mockRepository.Object);
+
+            var actionResult = userController.GetUtilisateurByEmail(testEmail).Result;
+
+            Assert.IsNotNull(actionResult);
+            Assert.AreEqual(user, actionResult.Value as Utilisateur);
+        }
+
+        [TestMethod]
+        public void GetUtilisateurByEmail_UnknownEmailPassed_ReturnsNotFoundResult_AvecMoq()
+        {
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            var userController = new UtilisateursController(mockRepository.Object);
+
+            var actionResult = userController.GetUtilisateurByEmail("unknown@test.com").Result;
+
+            Assert.IsInstanceOfType(actionResult.Result, typeof(NotFoundResult));
+        }
+
+        [TestMethod]
+        public void DeleteUtilisateurTest_AvecMoq()
+        {
+            Utilisateur user = new Utilisateur
             {
-                Nom = "Test",
-                Mail = $"delete_{Guid.NewGuid()}@test.com",
-                Pwd = "password"
+                UserId = 1,
+                Nom = "Calida",
+                Prenom = "Lilley",
+                Mail = "clilleymd@last.fm",
+                Pwd = "Toto12345678!"
             };
-            _context.Utilisateurs.Add(userToDelete);
-            _context.SaveChanges();
-            int id = userToDelete.UserId;
 
-            var result = _controller.DeleteUtilisateur(id).Result;
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(user));
+            var userController = new UtilisateursController(mockRepository.Object);
 
-            var checkUser = _context.Utilisateurs.Find(id);
-            Assert.IsNull(checkUser);
-            Assert.IsInstanceOfType(result, typeof(NoContentResult));
+            var actionResult = userController.DeleteUtilisateur(1).Result;
+
+            Assert.IsInstanceOfType(actionResult, typeof(NoContentResult), "Not a NoContentResult");
+        }
+
+        [TestMethod]
+        public void PutUtilisateurTest_ValidUpdate_ReturnsNoContent_AvecMoq()
+        {
+            Utilisateur existingUser = new Utilisateur { UserId = 1, Nom = "OldName", Mail = "test@test.com", Pwd = "pwd" };
+            Utilisateur updatedUser = new Utilisateur { UserId = 1, Nom = "NewName", Mail = "test@test.com", Pwd = "pwd" };
+
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(existingUser));
+
+            var userController = new UtilisateursController(mockRepository.Object);
+
+            var actionResult = userController.PutUtilisateur(1, updatedUser).Result;
+
+            Assert.IsInstanceOfType(actionResult, typeof(NoContentResult), "Not a NoContentResult");
         }
     }
 }

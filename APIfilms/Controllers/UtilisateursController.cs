@@ -29,7 +29,8 @@ namespace APIfilms.Controllers
         public async Task<ActionResult<Utilisateur>> GetUtilisateurById(int id)
         {
             var user = await dataRepository.GetByIdAsync(id);
-            if (user.Value == null)
+
+            if (user == null || user.Value == null)
             {
                 return NotFound();
             }
@@ -43,7 +44,8 @@ namespace APIfilms.Controllers
         public async Task<ActionResult<Utilisateur>> GetUtilisateurByEmail(string email)
         {
             var user = await dataRepository.GetByStringAsync(email);
-            if (user.Value == null)
+
+            if (user == null || user.Value == null)
             {
                 return NotFound();
             }
@@ -67,7 +69,8 @@ namespace APIfilms.Controllers
             }
 
             var userToUpdate = await dataRepository.GetByIdAsync(id);
-            if (userToUpdate.Value == null)
+
+            if (userToUpdate == null || userToUpdate.Value == null)
             {
                 return NotFound();
             }
@@ -96,7 +99,8 @@ namespace APIfilms.Controllers
         public async Task<IActionResult> DeleteUtilisateur(int id)
         {
             var user = await dataRepository.GetByIdAsync(id);
-            if (user.Value == null)
+
+            if (user == null || user.Value == null)
             {
                 return NotFound();
             }
