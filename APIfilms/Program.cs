@@ -1,5 +1,7 @@
+using APIfilms.Models.DataManager;
+using APIfilms.Models.EntityFramework;
+using APIfilms.Models.Repository;
 using Microsoft.EntityFrameworkCore;
-using APIfilms.Models.EntityFramework; 
 
 namespace APIfilms
 {
@@ -10,6 +12,8 @@ namespace APIfilms
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+
+            builder.Services.AddScoped<IDataRepository<Utilisateur>, UtilisateurManager>();
 
             builder.Services.AddControllers();
 
