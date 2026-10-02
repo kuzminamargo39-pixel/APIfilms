@@ -3,16 +3,15 @@ using Moq;
 using APIfilms.Models.EntityFramework;
 using APIfilms.Models.Repository;
 using Microsoft.AspNetCore.Mvc;
-using APIfilms.Models.DTO; // Додано для доступу до DTO
-using AutoMapper;          // Додано для AutoMapper
-using APIfilms.Profiles;   // Додано для доступу до твого профілю маплення
+using APIfilms.Models.DTO; 
+using AutoMapper;        
+using APIfilms.Profiles;  
 
 namespace APIfilmsTests
 {
     [TestClass]
     public class UtilisateursControllerTests
     {
-        // Допоміжний метод для швидкого створення маппера у тестах
         private IMapper GetMapper()
         {
             var config = new MapperConfiguration(cfg => cfg.AddProfile<UtilisateurProfile>());
@@ -20,11 +19,43 @@ namespace APIfilmsTests
         }
 
         [TestMethod]
+        public void GetVillesStats_ReturnsExpectedAggregatedMetrics_AvecMoq()
+        {
+            var users = new List<Utilisateur>
+            {
+                new Utilisateur { UserId = 1, Nom = "User1", Ville = "Annecy", Mail = "u1@test.com" },
+                new Utilisateur { UserId = 2, Nom = "User2", Ville = "Annecy", Mail = "u2@test.com" },
+                new Utilisateur { UserId = 3, Nom = "User3", Ville = "Lyon", Mail = "u3@test.com" }
+            };
+
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            mockRepository.Setup(x => x.GetAllAsync()).ReturnsAsync(new ActionResult<IEnumerable<Utilisateur>>(users));
+
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper);
+
+            var actionResult = userController.GetVillesStats().Result;
+
+            Assert.IsInstanceOfType(actionResult.Result, typeof(OkObjectResult));
+            var okResult = actionResult.Result as OkObjectResult;
+
+            var stats = okResult?.Value as IEnumerable<VilleStatsDto>;
+            Assert.IsNotNull(stats);
+
+            var statsList = stats.ToList();
+            Assert.AreEqual(2, statsList.Count);
+    
+            var annecyStats = statsList.FirstOrDefault(s => s.VilleName == "Annecy");
+            Assert.IsNotNull(annecyStats);
+            Assert.AreEqual(2, annecyStats.NbUtilisateurs);
+        }
+
+        [TestMethod]
         public void PostUtilisateur_ModelValidated_CreationOK_AvecMoq()
         {
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
-            var mapper = GetMapper(); // Створюємо маппер
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var mapper = GetMapper(); 
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             Utilisateur user = new Utilisateur
             {
@@ -71,19 +102,17 @@ namespace APIfilmsTests
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(user));
             var mapper = GetMapper();
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.GetUtilisateurById(1).Result;
 
-            // ЗМІНЕНО: Тепер контролер повертає OkObjectResult, а всередині лежить UtilisateurDetailDto
             Assert.IsInstanceOfType(actionResult.Result, typeof(OkObjectResult));
             var okResult = actionResult.Result as OkObjectResult;
             Assert.IsNotNull(okResult?.Value);
 
             var dto = okResult.Value as UtilisateurDetailDto;
             Assert.IsNotNull(dto);
-            Assert.AreEqual(user.Nom, dto.Nom); // Перевіряємо, що AutoMapper правильно переніс ім'я
-            // Assert.AreEqual(user.Mail, dto.Mail); // Якщо ти виправила Email на Mail у DTO
+            Assert.AreEqual(user.Nom, dto.Nom); 
         }
 
         [TestMethod]
@@ -91,7 +120,7 @@ namespace APIfilmsTests
         {
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             var mapper = GetMapper();
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.GetUtilisateurById(0).Result;
 
@@ -107,11 +136,10 @@ namespace APIfilmsTests
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByStringAsync(testEmail)).ReturnsAsync(new ActionResult<Utilisateur>(user));
             var mapper = GetMapper();
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.GetUtilisateurByEmail(testEmail).Result;
 
-            // ЗМІНЕНО: Тепер перевіряємо на OkObjectResult та UtilisateurDetailDto
             Assert.IsInstanceOfType(actionResult.Result, typeof(OkObjectResult));
             var okResult = actionResult.Result as OkObjectResult;
 
@@ -125,7 +153,7 @@ namespace APIfilmsTests
         {
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             var mapper = GetMapper();
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var userController = new UtilisateursController(mockRepository.Object, mapper);
 
             var actionResult = userController.GetUtilisateurByEmail("unknown@test.com").Result;
 
@@ -147,7 +175,7 @@ namespace APIfilmsTests
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(user));
             var mapper = GetMapper();
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.DeleteUtilisateur(1).Result;
 
@@ -164,7 +192,7 @@ namespace APIfilmsTests
             mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(existingUser));
 
             var mapper = GetMapper();
-            var userController = new UtilisateursController(mockRepository.Object, mapper); // Додаємо маппер
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.PutUtilisateur(1, updatedUser).Result;
 

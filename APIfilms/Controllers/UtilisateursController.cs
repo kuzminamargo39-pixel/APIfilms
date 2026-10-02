@@ -69,6 +69,34 @@ namespace APIfilms.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("GetVillesStats")]
+        [ActionName("GetVillesStats")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<VilleStatsDto>>> GetVillesStats()
+        {
+            var result = await dataRepository.GetAllAsync();
+            var utilisateurs = result.Value;
+
+            if (utilisateurs == null)
+            {
+                return NotFound();
+            }
+
+            // LINQ
+            var stats = utilisateurs
+                .Where(u => !string.IsNullOrEmpty(u.Ville)) 
+                .GroupBy(u => u.Ville)
+                .Select(g => new VilleStatsDto
+                {
+                    VilleName = g.Key!,
+                    NbUtilisateurs = g.Count()
+                })
+                .OrderByDescending(s => s.NbUtilisateurs) 
+                .ToList();
+
+            return Ok(stats);
+        }
+
         [HttpPut("PutUtilisateur/{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
