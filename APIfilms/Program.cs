@@ -14,6 +14,8 @@ namespace APIfilms
             // Add services to the container.
 
             builder.Services.AddScoped<IDataRepository<Utilisateur>, UtilisateurManager>();
+            builder.Services.AddScoped<IDataRepository<Film>, FilmManager>();
+            builder.Services.AddScoped<IDataRepository<Notation>, NotationManager>();
 
             builder.Services.AddControllers();
 
@@ -23,6 +25,8 @@ namespace APIfilms
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             var app = builder.Build();
 

@@ -3,17 +3,59 @@ using Moq;
 using APIfilms.Models.EntityFramework;
 using APIfilms.Models.Repository;
 using Microsoft.AspNetCore.Mvc;
+using APIfilms.Models.DTO; 
+using AutoMapper;        
+using APIfilms.Profiles;  
 
 namespace APIfilmsTests
 {
     [TestClass]
     public class UtilisateursControllerTests
     {
+        private IMapper GetMapper()
+        {
+            var config = new MapperConfiguration(cfg => cfg.AddProfile<UtilisateurProfile>());
+            return config.CreateMapper();
+        }
+
+        [TestMethod]
+        public void GetVillesStats_ReturnsExpectedAggregatedMetrics_AvecMoq()
+        {
+            var users = new List<Utilisateur>
+            {
+                new Utilisateur { UserId = 1, Nom = "User1", Ville = "Annecy", Mail = "u1@test.com" },
+                new Utilisateur { UserId = 2, Nom = "User2", Ville = "Annecy", Mail = "u2@test.com" },
+                new Utilisateur { UserId = 3, Nom = "User3", Ville = "Lyon", Mail = "u3@test.com" }
+            };
+
+            var mockRepository = new Mock<IDataRepository<Utilisateur>>();
+            mockRepository.Setup(x => x.GetAllAsync()).ReturnsAsync(new ActionResult<IEnumerable<Utilisateur>>(users));
+
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper);
+
+            var actionResult = userController.GetVillesStats().Result;
+
+            Assert.IsInstanceOfType(actionResult.Result, typeof(OkObjectResult));
+            var okResult = actionResult.Result as OkObjectResult;
+
+            var stats = okResult?.Value as IEnumerable<VilleStatsDto>;
+            Assert.IsNotNull(stats);
+
+            var statsList = stats.ToList();
+            Assert.AreEqual(2, statsList.Count);
+    
+            var annecyStats = statsList.FirstOrDefault(s => s.VilleName == "Annecy");
+            Assert.IsNotNull(annecyStats);
+            Assert.AreEqual(2, annecyStats.NbUtilisateurs);
+        }
+
         [TestMethod]
         public void PostUtilisateur_ModelValidated_CreationOK_AvecMoq()
         {
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper(); 
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             Utilisateur user = new Utilisateur
             {
@@ -59,20 +101,26 @@ namespace APIfilmsTests
 
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(user));
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.GetUtilisateurById(1).Result;
 
-            Assert.IsNotNull(actionResult);
-            Assert.IsNotNull(actionResult.Value);
-            Assert.AreEqual(user, actionResult.Value as Utilisateur);
+            Assert.IsInstanceOfType(actionResult.Result, typeof(OkObjectResult));
+            var okResult = actionResult.Result as OkObjectResult;
+            Assert.IsNotNull(okResult?.Value);
+
+            var dto = okResult.Value as UtilisateurDetailDto;
+            Assert.IsNotNull(dto);
+            Assert.AreEqual(user.Nom, dto.Nom); 
         }
 
         [TestMethod]
         public void GetUtilisateurById_UnknownIdPassed_ReturnsNotFoundResult_AvecMoq()
         {
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.GetUtilisateurById(0).Result;
 
@@ -87,19 +135,25 @@ namespace APIfilmsTests
 
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByStringAsync(testEmail)).ReturnsAsync(new ActionResult<Utilisateur>(user));
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.GetUtilisateurByEmail(testEmail).Result;
 
-            Assert.IsNotNull(actionResult);
-            Assert.AreEqual(user, actionResult.Value as Utilisateur);
+            Assert.IsInstanceOfType(actionResult.Result, typeof(OkObjectResult));
+            var okResult = actionResult.Result as OkObjectResult;
+
+            var dto = okResult?.Value as UtilisateurDetailDto;
+            Assert.IsNotNull(dto);
+            Assert.AreEqual(user.Nom, dto.Nom);
         }
 
         [TestMethod]
         public void GetUtilisateurByEmail_UnknownEmailPassed_ReturnsNotFoundResult_AvecMoq()
         {
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper);
 
             var actionResult = userController.GetUtilisateurByEmail("unknown@test.com").Result;
 
@@ -120,7 +174,8 @@ namespace APIfilmsTests
 
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(user));
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.DeleteUtilisateur(1).Result;
 
@@ -136,7 +191,8 @@ namespace APIfilmsTests
             var mockRepository = new Mock<IDataRepository<Utilisateur>>();
             mockRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new ActionResult<Utilisateur>(existingUser));
 
-            var userController = new UtilisateursController(mockRepository.Object);
+            var mapper = GetMapper();
+            var userController = new UtilisateursController(mockRepository.Object, mapper); 
 
             var actionResult = userController.PutUtilisateur(1, updatedUser).Result;
 
