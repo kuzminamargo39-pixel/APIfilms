@@ -11,8 +11,6 @@ namespace APIfilms
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddScoped<IDataRepository<Utilisateur>, UtilisateurManager>();
             builder.Services.AddScoped<IDataRepository<Film>, FilmManager>();
             builder.Services.AddScoped<IDataRepository<Notation>, NotationManager>();
@@ -22,15 +20,24 @@ namespace APIfilms
             builder.Services.AddDbContext<FilmRatingsDBContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowBlazorOrigin", policy =>
+                {
+                    policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                });
+            });
+
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -39,8 +46,9 @@ namespace APIfilms
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseCors("AllowBlazorOrigin");
 
+            app.UseAuthorization();
 
             app.MapControllers();
 

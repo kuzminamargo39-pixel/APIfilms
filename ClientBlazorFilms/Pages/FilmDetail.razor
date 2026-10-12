@@ -1,0 +1,99 @@
+﻿@page "/films/{Id:int}"
+@using ClientBlazorFilms.ViewModels
+@inject FilmDetailViewModel ViewModel
+
+<PageTitle>Movie Details</PageTitle>
+
+<h3>Edit Movie</h3>
+
+@if (ViewModel.LoadDetailCommand.IsRunning)
+{
+    <div class="d-flex align-items-center gap-2">
+        <div class="spinner-border text-primary" role="status"></div>
+        <span>Loading details...</span>
+    </div>
+}
+else if (ViewModel.Film != null)
+{
+    @if (!string.IsNullOrEmpty(ViewModel.StatusMessage))
+    {
+        <div class="alert @(ViewModel.IsSavedSuccessfully ? "alert-success" : "alert-warning")">
+            @ViewModel.StatusMessage
+        </div>
+    }
+
+    <div class="card p-3 mb-3 bg-light">
+        <h5>Additional Information:</h5>
+        <ul>
+            <li><strong>Formatted duration:</strong> @ViewModel.Film.DureeFormatee</li>
+            <li><strong>Recent release:</strong> @(ViewModel.Film.EstRecent ? "Yes" : "No")</li>
+        </ul>
+    </div>
+
+    <EditForm Model="@ViewModel.Film" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label class="form-label">Title:</label>
+            <InputText class="form-control" @bind-Value="ViewModel.Film.Titre" />
+            <ValidationMessage For="@(() => ViewModel.Film.Titre)" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Summary / Description:</label>
+            <InputTextArea class="form-control" @bind-Value="ViewModel.Film.Resume" />
+            <ValidationMessage For="@(() => ViewModel.Film.Resume)" class="text-danger" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Release Date:</label>
+                <InputDate class="form-control" @bind-Value="ViewModel.Film.DateSortie" />
+                <ValidationMessage For="@(() => ViewModel.Film.DateSortie)" class="text-danger" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Duration (minutes):</label>
+                <InputNumber class="form-control" @bind-Value="ViewModel.Film.Duree" />
+                <ValidationMessage For="@(() => ViewModel.Film.Duree)" class="text-danger" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Genre:</label>
+            <InputText class="form-control" @bind-Value="ViewModel.Film.Genre" />
+            <ValidationMessage For="@(() => ViewModel.Film.Genre)" class="text-danger" />
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-success" disabled="@ViewModel.SaveCommand.IsRunning">
+                Save
+            </button>
+            <button type="button" class="btn btn-danger"
+                    hidden="@(!ViewModel.SaveCommand.CanBeCanceled)"
+                    @onclick="() => ViewModel.SaveCommand.Cancel()">
+                Cancel
+            </button>
+            <a class="btn btn-secondary" href="films">Back to list</a>
+        </div>
+    </EditForm>
+}
+else
+{
+    <p>Movie not found.</p>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.LoadDetailCommand.ExecuteAsync(Id);
+    }
+
+    private async Task SaveAsync()
+    {
+        await ViewModel.SaveCommand.ExecuteAsync(null);
+    }
+}

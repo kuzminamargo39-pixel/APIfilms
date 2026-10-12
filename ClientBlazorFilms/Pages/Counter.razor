@@ -1,0 +1,146 @@
+﻿@page "/counter"
+
+<PageTitle>Espace Interactif & Quiz</PageTitle>
+
+<h2 class="mb-1">🧮 Espace Interactif</h2>
+<p class="text-muted mb-4">Module réactif combinant gestion d'état Blazor et mini-quiz mathématique.</p>
+
+<div class="row g-4">   
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white fw-semibold">
+                Compteur à Pas Variable
+            </div>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div>
+                    <div class="text-center my-3">
+                        <span class="text-muted d-block small">Valeur actuelle</span>
+                        <span class="display-3 fw-bold @(currentCount >= 0 ? "text-success" : "text-danger")">
+                            @currentCount
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Incrément par clic (Pas) :</label>
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn @(step == 1 ? "btn-primary" : "btn-outline-primary")" @onclick="() => step = 1">+1</button>
+                            <button type="button" class="btn @(step == 5 ? "btn-primary" : "btn-outline-primary")" @onclick="() => step = 5">+5</button>
+                            <button type="button" class="btn @(step == 10 ? "btn-primary" : "btn-outline-primary")" @onclick="() => step = 10">+10</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success flex-grow-1" @onclick="Increment">➕ Ajouter (@step)</button>
+                    <button class="btn btn-warning flex-grow-1" @onclick="Decrement">➖ Soustraire</button>
+                    <button class="btn btn-outline-secondary" @onclick="Reset">↺</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white fw-semibold d-flex justify-content-between align-items-center">
+                <span>🎯 Mini-Quiz Mathématique</span>
+                <span class="badge bg-info text-dark">Score : @score pts</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Résolvez le calcul ci-dessous pour tester la réactivité en direct :</p>
+
+                <div class="p-3 bg-light rounded text-center my-3 border">
+                    <span class="display-5 fw-bold font-monospace">@num1 @op @num2 = ?</span>
+                </div>
+
+                <div class="row g-2 align-items-center">
+                    <div class="col-8">
+                        <input type="number" class="form-control form-control-lg text-center"
+                               placeholder="Votre réponse..."
+                               @bind="userAnswer"
+                               @onkeydown="HandleKeyDown" />
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-primary btn-lg w-100" @onclick="CheckAnswer">Valider</button>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(quizFeedback))
+                {
+                    <div class="alert @quizFeedbackClass mt-3 mb-0 py-2 text-center">
+                        @quizFeedback
+                    </div>
+                }
+            </div>
+            <div class="card-footer bg-transparent text-end">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="GenerateNewProblem">Autre calcul 🎲</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int currentCount = 0;
+    private int step = 1;
+
+    private void Increment() => currentCount += step;
+    private void Decrement() => currentCount -= step;
+    private void Reset() => currentCount = 0;
+
+    private int num1;
+    private int num2;
+    private string op = "+";
+    private int? userAnswer;
+    private int score = 0;
+    private string? quizFeedback;
+    private string quizFeedbackClass = "alert-info";
+
+    protected override void OnInitialized()
+    {
+        GenerateNewProblem();
+    }
+
+    private void GenerateNewProblem()
+    {
+        var rnd = new Random();
+        num1 = rnd.Next(2, 50);
+        num2 = rnd.Next(2, 50);
+        op = rnd.Next(0, 2) == 0 ? "+" : "-";
+
+        if (op == "-" && num1 < num2)
+        {
+            (num1, num2) = (num2, num1);
+        }
+
+        userAnswer = null;
+        quizFeedback = null;
+    }
+
+    private void CheckAnswer()
+    {
+        if (!userAnswer.HasValue) return;
+
+        int expected = op == "+" ? (num1 + num2) : (num1 - num2);
+
+        if (userAnswer.Value == expected)
+        {
+            score += 10;
+            quizFeedback = "Bravo ! Réponse correcte (+10 pts) 🎉";
+            quizFeedbackClass = "alert-success";
+            GenerateNewProblem();
+        }
+        else
+        {
+            quizFeedback = $"Incorrect. Le bon résultat était {expected}. Essayez un nouveau calcul !";
+            quizFeedbackClass = "alert-danger";
+            GenerateNewProblem();
+        }
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            CheckAnswer();
+        }
+    }
+}
