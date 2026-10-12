@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APIfilms", "APIfilms\APIfil
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APIfilmsTests", "APIfilmsTests\APIfilmsTests.csproj", "{70809ABC-2814-4CF8-8ABB-A6EE2AE1A7F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientBlazorFilms", "ClientBlazorFilms\ClientBlazorFilms.csproj", "{DE7CCE3E-8F08-4BD1-A610-ED1940991E13}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{70809ABC-2814-4CF8-8ABB-A6EE2AE1A7F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70809ABC-2814-4CF8-8ABB-A6EE2AE1A7F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70809ABC-2814-4CF8-8ABB-A6EE2AE1A7F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE7CCE3E-8F08-4BD1-A610-ED1940991E13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE7CCE3E-8F08-4BD1-A610-ED1940991E13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE7CCE3E-8F08-4BD1-A610-ED1940991E13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE7CCE3E-8F08-4BD1-A610-ED1940991E13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,47 @@
+﻿@page "/"
+
+<PageTitle>CinéManager - Accueil</PageTitle>
+
+<div class="p-5 mb-4 bg-light rounded-3 shadow-sm border">
+    <div class="container-fluid py-3">
+        <h1 class="display-5 fw-bold text-primary">🎬 Bienvenue sur CinéManager</h1>
+        <p class="col-md-9 fs-5 text-muted">
+            Plateforme interactive de gestion cinématographique conçue avec Blazor WebAssembly,
+            ASP.NET Core Web API et l'architecture logicielle MVVM (Model-View-ViewModel).
+        </p>
+        <div class="d-flex gap-3 mt-4">
+            <a class="btn btn-primary btn-lg px-4" href="films">Explorer le Catalogue</a>
+            <a class="btn btn-outline-secondary btn-lg px-4" href="calculator">Outils & Mini-Jeux</a>
+        </div>
+    </div>
+</div>
+
+<div class="row align-items-md-stretch g-4">
+    <div class="col-md-4">
+        <div class="h-100 p-4 bg-white border rounded-3 shadow-sm">
+            <div class="fs-1 text-primary mb-2">⚡</div>
+            <h4>Architecture MVVM</h4>
+            <p class="text-muted">
+                Découplage strict entre l'interface utilisateur et la logique applicative grâce au Microsoft MVVM Toolkit.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="h-100 p-4 bg-white border rounded-3 shadow-sm">
+            <div class="fs-1 text-success mb-2">⏱️</div>
+            <h4>Gestion Asynchrone</h4>
+            <p class="text-muted">
+                Simulation de latence réseau et contrôle réactif avec annulation instantanée via CancellationToken.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="h-100 p-4 bg-white border rounded-3 shadow-sm">
+            <div class="fs-1 text-warning mb-2">🛡️</div>
+            <h4>Validation Complète</h4>
+            <p class="text-muted">
+                Contrôle de saisie rigoureux côté client avec DataAnnotations et retour visuel dynamique.
+            </p>
+        </div>
+    </div>
+</div>
